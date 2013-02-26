@@ -1,6 +1,5 @@
-use sdl::event::{NoEvent, QuitEvent};
-// use sdl::event::{KeyDownEvent, KeyUpEvent, NoEvent, QuitEvent};
-// use sdl::event::{DownKey, EscapeKey, LeftKey, RShiftKey, ReturnKey, RightKey, UpKey};
+use sdl::event::{NoEvent, QuitEvent, KeyDownEventType, KeyUpEventType, Key, KeyEvent};
+use sdl::event::{DownKey, EscapeKey, LeftKey, RShiftKey, ReturnKey, RightKey, UpKey};
 // use sdl::event::{XKey, ZKey};
 use sdl::event;
 
@@ -47,39 +46,38 @@ impl Input
         }
     }
 
-    // fn handle_control_event(&mut self, key_event: &KeyEvent, down: bool)
-    // {
-    //     match key_event.keycode
-    //     {
-    //         LeftKey   => self.gamepad_0.left   = down,
-    //         DownKey   => self.gamepad_0.down   = down,
-    //         UpKey     => self.gamepad_0.up     = down,
-    //         RightKey  => self.gamepad_0.right  = down,
-    //         ZKey      => self.gamepad_0.a      = down,
-    //         XKey      => self.gamepad_0.b      = down,
-    //         RShiftKey => self.gamepad_0.select = down,
-    //         ReturnKey => self.gamepad_0.start  = down,
-    //         _         => {}
-    //     }
-    // }
+    fn handle_control_event(&mut self, key: Key, down: bool)
+    {
+        match key
+        {
+            LeftKey   => self.gamepad_0.left   = down,
+            DownKey   => self.gamepad_0.down   = down,
+            UpKey     => self.gamepad_0.up     = down,
+            RightKey  => self.gamepad_0.right  = down,
+            // ZKey      => self.gamepad_0.a      = down,
+            // XKey      => self.gamepad_0.b      = down,
+            // RShiftKey => self.gamepad_0.select = down,
+            // ReturnKey => self.gamepad_0.start  = down,
+            _         => {}
+        }
+    }
 
-    fn check_input(&self) -> InputResult
+    fn check_input(&mut self) -> InputResult
     {
         loop
         {
             match event::poll_event()
             {
                 NoEvent => break,
-                // KeyDownEvent(ref key_event) =>
-                // {
-                //     self.handle_control_event(key_event, true);
+                KeyEvent(key, isDown, _, _) =>
+                {
+                    self.handle_control_event(key, isDown);
 
-                //     if key_event.keycode == EscapeKey
-                //     {
-                //         return Quit;
-                //     }
-                // }
-                // KeyUpEvent(ref key_event) => self.handle_control_event(key_event, false),
+                    if key == EscapeKey
+                    {
+                        return Quit;
+                    }
+                }
                 QuitEvent => return Quit,
                 _ => {}
             }

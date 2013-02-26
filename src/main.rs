@@ -24,7 +24,7 @@ fn main() {
             SCREEN_HEIGHT as int,
             SCREEN_DEPTH as int,
             [sdl::video::HWSurface],
-            [sdl::video::DoubleBuf]
+            [sdl::video::DoubleBuf, sdl::video::Fullscreen]
         );
 
         let screen = match video_report
