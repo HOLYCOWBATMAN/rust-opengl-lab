@@ -1,0 +1,6 @@
+*.a
+*.dylib
+*.dSYM
+*.sublime-project
+*.sublime-workspace
+rustlab
