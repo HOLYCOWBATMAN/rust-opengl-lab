@@ -3,7 +3,7 @@
 
 extern mod sdl;
 use sdl;
-use sdl::video::Surface;
+use sdlv = sdl::video;
 
 mod gl;
 use gl::*;
@@ -47,15 +47,15 @@ fn main()
         sdl::init([sdl::InitVideo]);
         sdl::wm::set_caption("Rust-SDL Lab", "rust-sdl");
 
-        let bounds = bounds_available[0];
-        let bit_depth = bit_depth_available[0];
+        let bounds       = bounds_available[0];
+        let bit_depth    = bit_depth_available[0];
 
         let video_report = sdl::video::set_video_mode(
             bounds.w as int,
             bounds.h as int,
             bit_depth as int,
-            [sdl::video::HWSurface],
-            [sdl::video::DoubleBuf, sdl::video::Fullscreen]
+            [sdlv::HWSurface],
+            [sdlv::DoubleBuf, sdlv::Fullscreen, sdlv::OpenGL]
         );
 
         let surface = match video_report
@@ -64,20 +64,20 @@ fn main()
             Err(err) => fail!(fmt!("failed to set video mode: %s", err))
         };
 
-        // unsafe
-        // {
-        //     glMatrixMode(GL_PROJECTION);
-        //     glOrtho(0.0,640.0,480.0,0.0,0.0,1.0);
-        //     glMatrixMode(GL_MODELVIEW);
-        //     glLoadIdentity();
-        // }
+        unsafe
+        {
+            glMatrixMode(GL_PROJECTION);
+            glOrtho(0.0, bounds.w as c_double, bounds.w as c_double, 0.0, 0.0, 1.0);
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+        }
 
-        let scene = GridScene::new(surface, CUBE_AMOUNT);
+        // let scene = GridScene::new(surface, CUBE_AMOUNT);
         let mut input = Input::new();
 
         loop
         {
-            scene.render(surface);
+            // scene.render(surface);
             surface.flip();
 
             match input.check_input()
