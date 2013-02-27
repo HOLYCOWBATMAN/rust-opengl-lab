@@ -1,6 +1,6 @@
 use sdl::event::{NoEvent, QuitEvent, KeyDownEventType, KeyUpEventType, Key, KeyEvent};
-use sdl::event::{DownKey, EscapeKey, LeftKey, RShiftKey, ReturnKey, RightKey, UpKey};
-// use sdl::event::{XKey, ZKey};
+use sdl::event::{Key, DownKey, EscapeKey, LeftKey, RShiftKey, ReturnKey, RightKey, UpKey};
+use sdl::event::{XKey, ZKey};
 use sdl::event;
 
 pub enum InputResult
@@ -50,14 +50,14 @@ impl Input
     {
         match key
         {
-            LeftKey   => self.gamepad_0.left   = down,
-            DownKey   => self.gamepad_0.down   = down,
-            UpKey     => self.gamepad_0.up     = down,
-            RightKey  => self.gamepad_0.right  = down,
-            // ZKey      => self.gamepad_0.a      = down,
-            // XKey      => self.gamepad_0.b      = down,
-            // RShiftKey => self.gamepad_0.select = down,
-            // ReturnKey => self.gamepad_0.start  = down,
+            ZKey      => self.gamepad_0.a      = down,      // 122
+            XKey      => self.gamepad_0.b      = down,      // 120
+            UpKey     => self.gamepad_0.up     = down,      // 273
+            DownKey   => self.gamepad_0.down   = down,      // 274
+            RightKey  => self.gamepad_0.right  = down,      // 275
+            LeftKey   => self.gamepad_0.left   = down,      // 276
+            RShiftKey => self.gamepad_0.select = down,      // 303
+            ReturnKey => self.gamepad_0.start  = down,      // 13
             _         => {}
         }
     }
