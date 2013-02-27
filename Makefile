@@ -1,8 +1,9 @@
 LIB_DIR := lib
+OPENGL_DIR := /System/Library/Frameworks/OpenGL.framework/Libraries
 
 RUSTC?=rustc
 RUSTFLAGS?=--cfg ndebug --cfg ncpuspew -O
-RUSTLDFLAGS?=-L $(LIB_DIR)
+RUSTLDFLAGS?=-L $(LIB_DIR) -L $(OPENGL_DIR)
 
 .PHONY: all
 all:	rustlab

@@ -1,68 +1,85 @@
 // use core::*;
+// use core::{libc, os, str};
 
 extern mod sdl;
-mod input;
-
 use sdl;
+use sdl::video::Surface;
 
-use input;
+mod gl;
+use gl::*;
+
+mod scenes;
+use scenes::GridScene;
+
+mod input;
 use input::Input;
 
-const SCREEN_WIDTH: u16  = 800;
-const SCREEN_HEIGHT: u16 = 600;
-const SCREEN_DEPTH: u16  = 32;
+mod util;
+use util::println;
 
-fn main() {
+struct Bounds
+{
+    w: u16,
+    h: u16
+}
+
+// TODO: use bounds_available to find best resolution
+const bounds_available: [Bounds * 3] = [
+    Bounds { w: 1440, h: 900 },
+    Bounds { w: 1152, h: 720 },
+    Bounds { w: 1024, h: 640 }
+];
+
+// TODO: bit_depth_available to find best bit_depth
+const bit_depth_available: [uint * 2] = [
+    32,
+    24
+];
+
+const CUBE_AMOUNT: u16 = 30;
+
+fn main()
+{
     #[main];
 
-    do sdl::start {
+    do sdl::start
+    {
         sdl::init([sdl::InitVideo]);
         sdl::wm::set_caption("Rust-SDL Lab", "rust-sdl");
 
+        let bounds = bounds_available[0];
+        let bit_depth = bit_depth_available[0];
+
         let video_report = sdl::video::set_video_mode(
-            SCREEN_WIDTH as int,
-            SCREEN_HEIGHT as int,
-            SCREEN_DEPTH as int,
+            bounds.w as int,
+            bounds.h as int,
+            bit_depth as int,
             [sdl::video::HWSurface],
             [sdl::video::DoubleBuf, sdl::video::Fullscreen]
         );
 
-        let screen = match video_report
+        let surface = match video_report
         {
-            Ok(screen) => screen,
+            Ok(surface) => surface,
             Err(err) => fail!(fmt!("failed to set video mode: %s", err))
         };
 
-        let rng = rand::Rng();
-        // Note: You'll want to put this and the flip call inside the main loop
-        // but we don't as to not startle epileptics
-        let cubes_amount: u16 = 10;
-        let cube_width        = (SCREEN_WIDTH / cubes_amount);
-        let cube_height       = (SCREEN_HEIGHT / cubes_amount);
+        // unsafe
+        // {
+        //     glMatrixMode(GL_PROJECTION);
+        //     glOrtho(0.0,640.0,480.0,0.0,0.0,1.0);
+        //     glMatrixMode(GL_MODELVIEW);
+        //     glLoadIdentity();
+        // }
 
-        for u16::range(0, cubes_amount) |i|
-        {
-            for u16::range(0, cubes_amount) |j|
-            {
-                screen.fill_rect(
-                    Some(sdl::Rect
-                    {
-                        x: i * cube_width as i16,
-                        y: j * cube_height as i16,
-                        w: cube_width,
-                        h: cube_height
-                    }),
-                    rng.gen::<sdl::video::Color>()
-                );
-            }
-        }
-
-        screen.flip();
-
+        let scene = GridScene::new(surface, CUBE_AMOUNT);
         let mut input = Input::new();
 
         loop
         {
+            scene.render(surface);
+            surface.flip();
+
             match input.check_input()
             {
                 input::Continue => {}
