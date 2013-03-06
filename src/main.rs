@@ -2,20 +2,23 @@
 // use core::{libc, os, str};
 
 extern mod sdl;
-use sdl;
-use sdlv = sdl::video;
+// mod gl;
 
-mod gl;
-use gl::*;
+// use sdl::video;
+// use gl::*;
+// use core::libc::c_double;
 
-mod scenes;
-use scenes::GridScene;
+// mod scenes;
+// use scenes::GridScene;
 
-mod input;
-use input::Input;
+// mod input;
+// use input::Input;
+
+mod loader;
+use loader::Obj;
 
 mod util;
-use util::println;
+// use util::{debug_assert, println};
 
 struct Bounds
 {
@@ -40,53 +43,53 @@ const CUBE_AMOUNT: u16 = 30;
 
 fn main()
 {
-    #[main];
-
     do sdl::start
     {
-        sdl::init([sdl::InitVideo]);
-        sdl::wm::set_caption("Rust-SDL Lab", "rust-sdl");
+        Obj::parse(~"./data/Banana.obj");
 
-        let bounds       = bounds_available[0];
-        let bit_depth    = bit_depth_available[0];
+        // sdl::init([sdl::InitVideo]);
+        // sdl::wm::set_caption("Rust-SDL Lab", "rust-sdl");
 
-        let video_report = sdl::video::set_video_mode(
-            bounds.w as int,
-            bounds.h as int,
-            bit_depth as int,
-            [sdlv::HWSurface],
-            [sdlv::DoubleBuf, sdlv::Fullscreen, sdlv::OpenGL]
-        );
+        // let bounds       = bounds_available[0];
+        // let bit_depth    = bit_depth_available[0];
 
-        let surface = match video_report
-        {
-            Ok(surface) => surface,
-            Err(err) => fail!(fmt!("failed to set video mode: %s", err))
-        };
+        // let video_report = sdl::video::set_video_mode(
+        //     bounds.w as int,
+        //     bounds.h as int,
+        //     bit_depth as int,
+        //     [video::HWSurface],
+        //     [video::DoubleBuf, video::Fullscreen, video::OpenGL]
+        // );
 
-        unsafe
-        {
-            glMatrixMode(GL_PROJECTION);
-            glOrtho(0.0, bounds.w as c_double, bounds.w as c_double, 0.0, 0.0, 1.0);
-            glMatrixMode(GL_MODELVIEW);
-            glLoadIdentity();
-        }
+        // let surface = match video_report
+        // {
+        //     Ok(surface) => surface,
+        //     Err(err) => fail!(fmt!("failed to set video mode: %s", err))
+        // };
 
-        // let scene = GridScene::new(surface, CUBE_AMOUNT);
-        let mut input = Input::new();
+        // unsafe
+        // {
+        //     glMatrixMode(GL_PROJECTION);
+        //     glOrtho(0.0, bounds.w as c_double, bounds.w as c_double, 0.0, 0.0, 1.0);
+        //     glMatrixMode(GL_MODELVIEW);
+        //     glLoadIdentity();
+        // }
 
-        loop
-        {
-            // scene.render(surface);
-            surface.flip();
+        // // // let scene = GridScene::new(surface, CUBE_AMOUNT);
+        // let mut input = Input::new();
 
-            match input.check_input()
-            {
-                input::Continue => {}
-                input::Quit => break
-            }
-        }
+        // loop
+        // {
+        //     // scene.render(surface);
+        //     surface.flip();
 
-        sdl::quit();
+        //     match input.check_input()
+        //     {
+        //         input::Continue => {}
+        //         input::Quit => break
+        //     }
+        // }
+
+        // sdl::quit();
     }
 }

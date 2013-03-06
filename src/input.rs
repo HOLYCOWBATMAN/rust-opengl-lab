@@ -62,7 +62,7 @@ impl Input
         }
     }
 
-    fn check_input(&mut self) -> InputResult
+    pub fn check_input(&mut self) -> InputResult
     {
         loop
         {
