@@ -3,24 +3,56 @@ use core::path;
 use core::str;
 use core::str::raw;
 use core::io::ReaderUtil;
+// use util::println;
+
+// types of .obj file entries supported
+const KEY_V: &str  = "v";
+const KEY_VT: &str = "vt";
+const KEY_VN: &str = "vn";
+const KEY_F: &str  = "f";
+
+// expected number of numerical elements in a given entry
+const V_ELEM_COUNT: int  = 3;
+const VT_ELEM_COUNT: int = 2;
+const VN_ELEM_COUNT: int = 3;
 
 pub struct Obj
 {
     vertices: ~[float],
     normals: ~[float],
     texcoords: ~[float],
-    faces: ~[float],
+    faces: ~[~Face],
     faceValence: u16
 }
 
-const KEY_V: &static/str  = "v";
-const KEY_VT: &static/str = "vt";
-const KEY_VN: &static/str = "vn";
-const KEY_F: &static/str  = "f";
+pub struct Face
+{
+    triplets: ~[FaceTriplet]
+}
+
+pub struct FaceTriplet
+{
+    v_idx: int,
+    vt_idx: int,
+    vn_idx: int
+}
+
+impl FaceTriplet
+{
+    static fn new(v: int, vt: int, vn: int) -> FaceTriplet
+    {
+        return FaceTriplet
+        {
+            v_idx:  if v < 0 { v } else { (v - 1)  * V_ELEM_COUNT },
+            vt_idx: if vt < 0 { vt } else { (vt - 1) * VT_ELEM_COUNT },
+            vn_idx: if vn < 0 { vn } else { (vn - 1) * VN_ELEM_COUNT }
+        };
+    }
+}
 
 impl Obj
 {
-    static fn parse(file_path: ~str) -> Obj
+    static fn parse(file_path: ~str) -> ~Obj
     {
         let pth = path::Path(file_path);
         let file_result = io::file_reader(&pth);
@@ -33,7 +65,7 @@ impl Obj
 
         let mut ln: ~str;
 
-        let mut obj = Obj{
+        let mut obj = ~Obj{
             vertices: ~[],
             normals: ~[],
             texcoords: ~[],
@@ -47,7 +79,7 @@ impl Obj
 
             if !ln.is_empty()
             {
-                parse_line(&mut obj, ln);
+                parse_line(obj, ln);
             }
         }
 
@@ -64,24 +96,42 @@ fn parse_line(data: &mut Obj, line: &str)
         return;
     }
 
-    if(key == KEY_V.to_str())
+    if str::eq_slice(key, KEY_V)
     {
         next_flts(3, xs_line, &mut data.vertices);
     }
-    else if(key == KEY_VT.to_str())
+    else if str::eq_slice(key, KEY_VN)
+    {
+        next_flts(3, xs_line, &mut data.normals);
+    }
+    else if str::eq_slice(key, KEY_VT)
     {
         next_flts(2, xs_line, &mut data.texcoords);
     }
+    else if str::eq_slice(key, KEY_F)
+    {
+        let words = str::words(xs_line);
+        let mut faceTriplets: ~[FaceTriplet] = ~[];
 
-    // else if(key == key_vn)
-    // {
-    // //     // io::println("key_vn");
-    // //     // line_to_vec_float(2, ln, &mut obj.normals);
-    // }
-    // else if(key == key_f)
-    // {
-    // //     // io::println("key_f");
-    // }
+        for vec::each(words) |&wrd| {
+
+            let indices = parse_f_token(wrd);
+            let faceTrp = match indices
+            {
+                [] =>          fail!(fmt!("f (face) entry needs at least one element: %s", xs_line)),
+                [v] =>         FaceTriplet::new(v, -1, -1),
+                [v, vt] =>     FaceTriplet::new(v, vt, -1),
+                [v, vt, vn] => FaceTriplet::new(v, vt, vn),
+                _ =>           fail!(fmt!("f (face) should have no more than three elements: %s", xs_line)),
+            };
+
+            faceTriplets.push(faceTrp);
+        }
+
+        let face = ~Face { triplets: faceTriplets };
+
+        data.faces.push(face);
+    }
 }
 
 fn next_word(line: &str) -> (~str, ~str)
@@ -90,6 +140,18 @@ fn next_word(line: &str) -> (~str, ~str)
     {
         Some(ps) => ps,
         None => fail!(fmt!("Parse failed for line: %s", line))
+    }
+}
+
+fn parse_f_token(line: &str) -> ~[int]
+{
+    do vec::map(str::split(line, |c| c == '/')) |&tk|
+    {
+        match int::from_str(tk)
+        {
+            Some(index) => index,
+            None => fail!(fmt!("cannot convert string: \"%s\" from line: \"%s\" to int", tk, line))
+        }
     }
 }
 
@@ -173,7 +235,7 @@ fn test_setup() -> ~Obj
         texcoords: ~[],
         faces: ~[],
         faceValence: 0
-    };
+    }
 }
 
 #[test]
@@ -199,6 +261,80 @@ fn test_parse_vt_line()
     fail_unless!(vec::len(data.texcoords) == 2);
     fail_unless!(eq(data.texcoords[0], 0.406606));
     fail_unless!(eq(data.texcoords[1], 0.637478));
+}
+
+#[test]
+fn test_parse_vn_line()
+{
+    let line = "vn 63.035789 14.539266 -173.554443";
+    let mut data = test_setup();
+    parse_line(data, line);
+
+    fail_unless!(vec::len(data.normals) == 3);
+    fail_unless!(eq(data.normals[0], 63.035789f));
+    fail_unless!(eq(data.normals[1], 14.539266f));
+    fail_unless!(eq(data.normals[2], -173.554443f));
+}
+
+#[test]
+fn test_parse_f_v_line()
+{
+    let line = "f 1 22 333";
+    let mut data = test_setup();
+
+    parse_line(data, line);
+
+    {
+        let face = &data.faces[0];
+
+        fail_unless!(vec::len(face.triplets) == 3);
+        fail_unless_face_eq(&face.triplets[0], 0, -1, -1);
+        fail_unless_face_eq(&face.triplets[1], 21, -1, -1);
+        fail_unless_face_eq(&face.triplets[2], 332, -1, -1);
+    }
+}
+
+// the indices used in the "f" entry of an .obj format are one based
+
+#[test]
+fn test_parse_f_vvt_line()
+{
+    let line = "f 1/2 22/33 333/444";
+    let mut data = test_setup();
+    parse_line(data, line);
+
+    {
+        let face = &data.faces[0];
+
+        fail_unless!(vec::len(face.triplets) == 3);
+        fail_unless_face_eq(&face.triplets[0], 0, 1, -1);
+        fail_unless_face_eq(&face.triplets[1], 21, 32, -1);
+        fail_unless_face_eq(&face.triplets[2], 332, 443, -1);
+    }
+}
+
+#[test]
+fn test_parse_f_vvtvn_line()
+{
+    let line = "f 1/2/3 22/33/44 333/444/555";
+    let mut data = test_setup();
+    parse_line(data, line);
+
+    {
+        let face = &data.faces[0];
+
+        fail_unless!(vec::len(face.triplets) == 3);
+        fail_unless_face_eq(&face.triplets[0], 0, 1, 2);
+        fail_unless_face_eq(&face.triplets[1], 21, 32, 43);
+        fail_unless_face_eq(&face.triplets[2], 332, 443, 554);
+    }
+}
+
+fn fail_unless_face_eq(triplet: &FaceTriplet, v: int, vt: int, vn: int)
+{
+    fail_unless!(triplet.v_idx == if v < 0 { v } else { v * V_ELEM_COUNT });
+    fail_unless!(triplet.vt_idx == if vt < 0 { vt } else { vt * VT_ELEM_COUNT });
+    fail_unless!(triplet.vn_idx == if vn < 0 { vn } else { vn * VN_ELEM_COUNT });
 }
 
 fn eq(a: float, b: float) -> bool

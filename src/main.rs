@@ -1,95 +1,59 @@
-// use core::*;
-// use core::{libc, os, str};
+extern mod glfw;
+extern mod opengles;
 
-extern mod sdl;
-// mod gl;
-
-// use sdl::video;
-// use gl::*;
-// use core::libc::c_double;
-
-// mod scenes;
-// use scenes::GridScene;
-
-// mod input;
-// use input::Input;
-
+mod input;
 mod loader;
-use loader::Obj;
-
+mod render;
+mod scenes;
 mod util;
-// use util::{debug_assert, println};
 
-struct Bounds
-{
-    w: u16,
-    h: u16
+// use input::Input;
+// use loader::Obj;
+// use util::println;
+
+fn main() {
+    // Run this task on the main thread. Unlike C or C++, a Rust program
+    // automatically starts a new thread, so this line is _essential_ to ensure
+    // that the OS is able to update the window and recieve events from the user.
+    do task::spawn_sched(task::PlatformThread) {
+        use core::unstable::finally::Finally;
+
+        do (|| {
+            glfw::set_error_callback(error_callback);
+
+            if !glfw::init() { fail!(~"Failed to initialize GLFW\n"); }
+
+            let (mode, monitor) = render::select_best_mode();
+
+            let window =
+                match glfw::Window::create(mode.width as uint, mode.height as uint, "Hello this is window", glfw::FullScreen(monitor)) {
+                    Some(w) => w,
+                    None    => fail!(~"Failed to open GLFW window")
+                };
+
+            window.set_key_callback(key_callback);
+            window.make_context_current();
+
+            // let obj = Obj::parse(~"./data/Banana.obj");
+
+            render::init_gl();
+
+            while !window.should_close() {
+                glfw::poll_events();
+            }
+
+        }).finally {
+            glfw::terminate();    // terminate glfw on completion
+        }
+    }
 }
 
-// TODO: use bounds_available to find best resolution
-const bounds_available: [Bounds * 3] = [
-    Bounds { w: 1440, h: 900 },
-    Bounds { w: 1152, h: 720 },
-    Bounds { w: 1024, h: 640 }
-];
-
-// TODO: bit_depth_available to find best bit_depth
-const bit_depth_available: [uint * 2] = [
-    32,
-    24
-];
-
-const CUBE_AMOUNT: u16 = 30;
-
-fn main()
-{
-    do sdl::start
-    {
-        Obj::parse(~"./data/Banana.obj");
-
-        // sdl::init([sdl::InitVideo]);
-        // sdl::wm::set_caption("Rust-SDL Lab", "rust-sdl");
-
-        // let bounds       = bounds_available[0];
-        // let bit_depth    = bit_depth_available[0];
-
-        // let video_report = sdl::video::set_video_mode(
-        //     bounds.w as int,
-        //     bounds.h as int,
-        //     bit_depth as int,
-        //     [video::HWSurface],
-        //     [video::DoubleBuf, video::Fullscreen, video::OpenGL]
-        // );
-
-        // let surface = match video_report
-        // {
-        //     Ok(surface) => surface,
-        //     Err(err) => fail!(fmt!("failed to set video mode: %s", err))
-        // };
-
-        // unsafe
-        // {
-        //     glMatrixMode(GL_PROJECTION);
-        //     glOrtho(0.0, bounds.w as c_double, bounds.w as c_double, 0.0, 0.0, 1.0);
-        //     glMatrixMode(GL_MODELVIEW);
-        //     glLoadIdentity();
-        // }
-
-        // // // let scene = GridScene::new(surface, CUBE_AMOUNT);
-        // let mut input = Input::new();
-
-        // loop
-        // {
-        //     // scene.render(surface);
-        //     surface.flip();
-
-        //     match input.check_input()
-        //     {
-        //         input::Continue => {}
-        //         input::Quit => break
-        //     }
-        // }
-
-        // sdl::quit();
+fn key_callback(window: &glfw::Window, key: libc::c_int, action: libc::c_int) {
+    if action == glfw::PRESS && key == glfw::KEY_ESCAPE {
+        window.set_should_close(true);
     }
+}
+
+fn error_callback(_error: libc::c_int, description: ~str) {
+    io::println(fmt!("GLFW Error: %s", description));
 }
