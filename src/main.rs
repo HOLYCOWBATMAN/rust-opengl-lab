@@ -1,5 +1,6 @@
 extern mod glfw;
 extern mod opengles;
+extern mod std;
 
 mod input;
 mod loader;
@@ -9,7 +10,7 @@ mod util;
 
 // use input::Input;
 // use loader::Obj;
-// use util::println;
+use util::println;
 
 fn main() {
     // Run this task on the main thread. Unlike C or C++, a Rust program
@@ -21,9 +22,20 @@ fn main() {
         do (|| {
             glfw::set_error_callback(error_callback);
 
-            if !glfw::init() { fail!(~"Failed to initialize GLFW\n"); }
+            if !glfw::init()
+            {
+                glfw::terminate();
+                fail!(~"Failed to initialize GLFW\n");
+            }
 
             let (mode, monitor) = render::select_best_mode();
+
+            // Choose a GL profile that is compatible with OS X 10.7+
+            glfw::window_hint(glfw::CONTEXT_VERSION_MAJOR, 3);
+            glfw::window_hint(glfw::CONTEXT_VERSION_MINOR, 2);
+            glfw::window_hint(glfw::OPENGL_FORWARD_COMPAT, 1);
+            glfw::window_hint(glfw::OPENGL_PROFILE, glfw::OPENGL_CORE_PROFILE);
+            // glfw::window_hint(glfw::CLIENT_API, glfw::OPENGL_ES_API);
 
             let window =
                 match glfw::Window::create(mode.width as uint, mode.height as uint, "Hello this is window", glfw::FullScreen(monitor)) {
@@ -34,12 +46,15 @@ fn main() {
             window.set_key_callback(key_callback);
             window.make_context_current();
 
-            // let obj = Obj::parse(~"./data/Banana.obj");
+            println(render::gl_report());
+            let rndr = render::init_gl(mode.width, mode.height);
 
-            render::init_gl();
+            // let obj = Obj::parse(~"./data/Banana.obj");
 
             while !window.should_close() {
                 glfw::poll_events();
+                render::draw(rndr);
+                window.swap_buffers();
             }
 
         }).finally {
@@ -55,5 +70,5 @@ fn key_callback(window: &glfw::Window, key: libc::c_int, action: libc::c_int) {
 }
 
 fn error_callback(_error: libc::c_int, description: ~str) {
-    io::println(fmt!("GLFW Error: %s", description));
+    println(fmt!("GLFW Error: %s", description));
 }

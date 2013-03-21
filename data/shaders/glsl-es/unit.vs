@@ -1,3 +1,5 @@
+#version 140
+
 attribute vec4 vPosition;
 
 void main()
