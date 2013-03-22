@@ -2,14 +2,16 @@ extern mod glfw;
 extern mod opengles;
 extern mod std;
 
+pub mod config;
 mod input;
 mod loader;
-pub mod render;
+pub mod scene;
+mod screen;
 mod util;
 #[path = "scenes/mod.rs"]
 mod scenes;
 
-use scene = scenes::triangle;
+use scenefx = scenes::triangle;
 use util::println;
 
 fn main() {
@@ -28,7 +30,7 @@ fn main() {
                 fail!(~"Failed to initialize GLFW\n");
             }
 
-            let (mode, monitor) = render::select_best_mode();
+            let (mode, monitor) = screen::select_best_mode();
 
             // Choose a GL profile that is compatible with OS X 10.7+
             glfw::window_hint(glfw::CONTEXT_VERSION_MAJOR, 3);
@@ -46,13 +48,13 @@ fn main() {
             window.set_key_callback(key_callback);
             window.make_context_current();
 
-            println(render::gl_report());
-            // render::init();
-            scene::init(mode.width, mode.height);
+            println(screen::gl_report());
+            // scene::init();
+            scenefx::init(mode.width, mode.height);
 
             while !window.should_close() {
                 glfw::poll_events();
-                scene::draw();
+                scenefx::draw();
                 window.swap_buffers();
             }
 
