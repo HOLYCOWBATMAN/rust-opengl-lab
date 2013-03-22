@@ -4,12 +4,12 @@ extern mod std;
 
 mod input;
 mod loader;
-mod render;
-mod scenes;
+pub mod render;
 mod util;
+#[path = "scenes/mod.rs"]
+mod scenes;
 
-// use input::Input;
-// use loader::Obj;
+use scene = scenes::triangle;
 use util::println;
 
 fn main() {
@@ -47,13 +47,12 @@ fn main() {
             window.make_context_current();
 
             println(render::gl_report());
-            let rndr = render::init_gl(mode.width, mode.height);
-
-            // let obj = Obj::parse(~"./data/Banana.obj");
+            // render::init();
+            scene::init(mode.width, mode.height);
 
             while !window.should_close() {
                 glfw::poll_events();
-                render::draw(rndr);
+                scene::draw();
                 window.swap_buffers();
             }
 
