@@ -3,6 +3,7 @@ use core::path;
 use core::str;
 use core::str::raw;
 use core::io::ReaderUtil;
+use core::io::Reader;
 // use util::println;
 
 // types of .obj file entries supported
@@ -17,13 +18,12 @@ const V_ELEM_COUNT: int  = 3;
 const VT_ELEM_COUNT: int = 2;
 const VN_ELEM_COUNT: int = 3;
 
-pub struct Obj
+pub struct ObjModel
 {
     vertices: ~[float],
     normals: ~[float],
     texcoords: ~[float],
     faces: ~[~Face],
-    faceValence: u16,
     material: ~str
 }
 
@@ -52,45 +52,51 @@ impl FaceTriplet
     }
 }
 
-impl Obj
+impl ObjModel
 {
-    static fn parse(file_path: ~str) -> ~Obj
-    {
-        let pth = path::Path(file_path);
-        let file_result = io::file_reader(&pth);
 
-        let rdr = match file_result
-        {
-            Ok(rdr) => rdr,
-            Err(err) => fail!(fmt!("failed to read file: %s", err))
-        };
-
-        let mut ln: ~str;
-
-        let mut obj = ~Obj{
-            vertices: ~[],
-            normals: ~[],
-            texcoords: ~[],
-            faces: ~[],
-            faceValence: 0,
-            material: ~""
-        };
-
-        while !rdr.eof()
-        {
-            ln  = rdr.read_line();
-
-            if !ln.is_empty()
-            {
-                parse_line(obj, ln);
-            }
-        }
-
-        return obj;
-    }
 }
 
-fn parse_line(data: &mut Obj, line: &str)
+pub fn obj_model_from_file(file_path: ~str) -> ~ObjModel
+{
+    let pth = path::Path(file_path);
+    let file_result = io::file_reader(&pth);
+
+    let rdr = match file_result
+    {
+        Ok(rdr) => rdr,
+        Err(err) => fail!(fmt!("failed to read file: %s", err))
+    };
+
+    parse_obj(rdr)
+}
+
+fn parse_obj(rdr: Reader) -> ~ObjModel
+{
+    let mut ln: ~str;
+
+    let mut obj = ~ObjModel{
+        vertices: ~[],
+        normals: ~[],
+        texcoords: ~[],
+        faces: ~[],
+        material: ~""
+    };
+
+    while !rdr.eof()
+    {
+        ln  = rdr.read_line();
+
+        if !ln.is_empty()
+        {
+            parse_line(obj, ln);
+        }
+    }
+
+    obj
+}
+
+fn parse_line(data: &mut ObjModel, line: &str)
 {
     let (key, xs_line) = next_word(line);
 
@@ -193,7 +199,7 @@ fn next_flts(amount: uint, line: &str, store: & mut ~[float]) -> ~str
 
 fn next_token(s: &str, sepfn: fn(cc: char) -> bool) -> Option<(~str, ~str)>
 {
-    let l       = str::len(s);
+    let l = str::len(s);
     let mut i = 0u, nx = 0u, stop = false;
 
     if (l == 0)
@@ -225,23 +231,20 @@ fn next_token(s: &str, sepfn: fn(cc: char) -> bool) -> Option<(~str, ~str)>
                 _ => unsafe { raw::slice_bytes(s, i+1u, l) }
             };
 
-            return Some((tkn, xs));
+            return Some((tkn, str::trim_left(xs)));
         }
 
         i = nx;
     }
 }
 
-
-fn test_setup() -> ~Obj
+fn test_setup() -> ~ObjModel
 {
-    return ~Obj
-    {
+    return ~ObjModel {
         vertices: ~[],
         normals: ~[],
         texcoords: ~[],
         faces: ~[],
-        faceValence: 0,
         material:~ ""
     }
 }
@@ -358,6 +361,101 @@ fn fail_unless_face_eq(triplet: &FaceTriplet, v: int, vt: int, vn: int)
 fn eq(a: float, b: float) -> bool
 {
     return float::abs(a - b) <= 1e-6;
+}
+
+#[test]
+fn test_file_parse()
+{
+    use core::io::with_str_reader;
+
+    let file_txt = ~"\
+        g quad\n\
+        usemtl sample\n\
+        v -0.5 0.5 0.0\n\
+        v  0.5 0.5 0.0\n\
+        v  0.5 -0.5 0.0\n\
+        v -0.5 -0.5 0.0\n\
+        vt 0.0 0.0\n\
+        vt 1.0 0.0\n\
+        vt 1.0 1.0\n\
+        vt 0.0 1.0\n\
+        f 0/0 1/1 2/2\n\
+        f 2/2 3/3 0/0
+    ";
+
+    do with_str_reader(file_txt) |rdr| {
+        let mdl = parse_obj(rdr);
+
+        fail_unless!(mdl.vertices.len() == 12);
+        fail_unless!(mdl.normals.len() == 0);
+        fail_unless!(mdl.texcoords.len() == 8);
+        fail_unless!(mdl.faces.len() == 2);
+    }
+}
+
+#[test]
+fn test_parse_file_unsupported_entries()
+{
+    use core::io::with_str_reader;
+
+    let file_txt = ~"
+        # cube.obj\n\
+        #\n\
+
+        o cube\n\
+        mtllib cube.mtl\n\
+
+        v -0.500000 -0.500000 0.500000\n\
+        v 0.500000 -0.500000 0.500000\n\
+        v -0.500000 0.500000 0.500000\n\
+        v 0.500000 0.500000 0.500000\n\
+        v -0.500000 0.500000 -0.500000\n\
+        v 0.500000 0.500000 -0.500000\n\
+        v -0.500000 -0.500000 -0.500000\n\
+        v 0.500000 -0.500000 -0.500000\n\
+
+        vt 0.000000 0.000000\n\
+        vt 1.000000 0.000000\n\
+        vt 0.000000 1.000000\n\
+        vt 1.000000 1.000000\n\
+
+        vn 0.000000 0.000000 1.000000\n\
+        vn 0.000000 1.000000 0.000000\n\
+        vn 0.000000 0.000000 -1.000000\n\
+        vn 0.000000 -1.000000 0.000000\n\
+        vn 1.000000 0.000000 0.000000\n\
+        vn -1.000000 0.000000 0.000000\n\
+
+        g cube\n\
+        usemtl cube\n\
+        s 1\n\
+        f 1/1/1 2/2/1 3/3/1\n\
+        f 3/3/1 2/2/1 4/4/1\n\
+        s 2\n\
+        f 3/1/2 4/2/2 5/3/2\n\
+        f 5/3/2 4/2/2 6/4/2\n\
+        s 3\n\
+        f 5/4/3 6/3/3 7/2/3\n\
+        f 7/2/3 6/3/3 8/1/3\n\
+        s 4\n\
+        f 7/1/4 8/2/4 1/3/4\n\
+        f 1/3/4 8/2/4 2/4/4\n\
+        s 5\n\
+        f 2/1/5 8/2/5 4/3/5\n\
+        f 4/3/5 8/2/5 6/4/5\n\
+        s 6\n\
+        f 7/1/6 1/2/6 5/3/6\n\
+        f 5/3/6 1/2/6 3/4/6\n\
+    ";
+
+    do with_str_reader(file_txt) |rdr| {
+        let mdl = parse_obj(rdr);
+
+        fail_unless!(mdl.vertices.len() == 24);
+        fail_unless!(mdl.normals.len() == 18);
+        fail_unless!(mdl.texcoords.len() == 8);
+        fail_unless!(mdl.faces.len() == 12);
+    }
 }
 
 #[test]
