@@ -59,9 +59,12 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
 
                 ~scene::Scene
                 {
-                    pgrm: pgrm,
-                    frag_shdr: frag_shdr,
-                    vert_shdr: vert_shdr
+                    programs: ~[pgrm],
+                    shaders: ~[frag_shdr, vert_shdr],
+                    buffers: ~[vbo],
+                    vertex_arrays: ~[vao],
+                    element_count: 0,
+                    textures: ~[]
                 }
             },
             Err(msg) => fail!(msg)
@@ -69,7 +72,7 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
     }
 }
 
-pub fn draw()
+pub fn draw(_scene: &scene::Scene)
 {
     gl::clear(gl::COLOR_BUFFER_BIT);
     gl::draw_arrays(gl::TRIANGLES, 0, 3);

@@ -1,12 +1,32 @@
 // use gl = opengles::gl2;
 use core::io::ReaderUtil;
 use gl = opengles::gl3;
+// use util::println;
 
 pub struct Scene
 {
-    pgrm: gl::GLuint,
-    frag_shdr: gl::GLuint,
-    vert_shdr: gl::GLuint
+    programs: ~[gl::GLuint],
+    shaders: ~[gl::GLuint],
+    buffers: ~[gl::GLuint],
+    vertex_arrays: ~[gl::GLuint],
+    element_count: uint,
+    textures: ~[gl::GLuint]
+}
+
+pub fn destroy(scene: &Scene)
+{
+    gl::delete_textures(scene.textures);
+
+    for scene.programs.each() |&program| {
+        gl::delete_program(program);
+    }
+
+    for scene.shaders.each() |&shader| {
+        gl::delete_shader(shader);
+    }
+
+    gl::delete_buffers(scene.buffers);
+    gl::delete_vertex_arrays(scene.vertex_arrays);
 }
 
 pub fn load_shader(shader_type: gl::GLenum, file_path: &Path) -> Result<gl::GLuint, ~str>

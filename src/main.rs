@@ -1,6 +1,7 @@
 extern mod glfw;
 extern mod opengles;
 extern mod std;
+extern mod stb_image;
 
 pub mod config;
 mod input;
@@ -11,7 +12,8 @@ mod util;
 #[path = "scenes/mod.rs"]
 mod scenes;
 
-use scenefx = scenes::triangle;
+// use scenefx = scenes::triangle;
+use scenefx = scenes::triangle_tex;
 use util::println;
 
 fn main() {
@@ -50,15 +52,18 @@ fn main() {
 
             println(screen::gl_report());
             // scene::init();
-            scenefx::init(mode.width, mode.height);
+            let scn = scenefx::init(mode.width, mode.height);
 
             while !window.should_close() {
                 glfw::poll_events();
-                scenefx::draw();
+                scenefx::draw(scn);
                 window.swap_buffers();
             }
 
+            scene::destroy(scn);
+
         }).finally {
+
             glfw::terminate();    // terminate glfw on completion
         }
     }

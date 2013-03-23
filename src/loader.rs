@@ -6,10 +6,11 @@ use core::io::ReaderUtil;
 // use util::println;
 
 // types of .obj file entries supported
-const KEY_V: &str  = "v";
-const KEY_VT: &str = "vt";
-const KEY_VN: &str = "vn";
-const KEY_F: &str  = "f";
+const KEY_V: &str      = "v";
+const KEY_VT: &str     = "vt";
+const KEY_VN: &str     = "vn";
+const KEY_F: &str      = "f";
+const KEY_USEMTL: &str = "usemtl";
 
 // expected number of numerical elements in a given entry
 const V_ELEM_COUNT: int  = 3;
@@ -22,7 +23,8 @@ pub struct Obj
     normals: ~[float],
     texcoords: ~[float],
     faces: ~[~Face],
-    faceValence: u16
+    faceValence: u16,
+    material: ~str
 }
 
 pub struct Face
@@ -70,7 +72,8 @@ impl Obj
             normals: ~[],
             texcoords: ~[],
             faces: ~[],
-            faceValence: 0
+            faceValence: 0,
+            material: ~""
         };
 
         while !rdr.eof()
@@ -96,7 +99,11 @@ fn parse_line(data: &mut Obj, line: &str)
         return;
     }
 
-    if str::eq_slice(key, KEY_V)
+    if str::eq_slice(key, KEY_USEMTL)
+    {
+        data.material = str::trim(xs_line)
+    }
+    else if str::eq_slice(key, KEY_V)
     {
         next_flts(3, xs_line, &mut data.vertices);
     }
@@ -234,8 +241,19 @@ fn test_setup() -> ~Obj
         normals: ~[],
         texcoords: ~[],
         faces: ~[],
-        faceValence: 0
+        faceValence: 0,
+        material:~ ""
     }
+}
+
+#[test]
+fn test_parse_usemtl_line()
+{
+    let line = "usemtl banana";
+    let mut data = test_setup();
+    parse_line(data, line);
+
+    fail_unless!(data.material == ~"banana");
 }
 
 #[test]
