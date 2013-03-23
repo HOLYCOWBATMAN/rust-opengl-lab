@@ -1,3 +1,4 @@
 pub mod triangle;
-pub mod triangle_tex;
+pub mod quad_tex;
+pub mod quad_obj;
 pub mod banana;
