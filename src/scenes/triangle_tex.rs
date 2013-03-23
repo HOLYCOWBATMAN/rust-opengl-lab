@@ -8,7 +8,6 @@ use scene;
 pub fn init(width: i32, height: i32) -> ~scene::Scene
 {
     // Create Vertex Array Object
-    // let vao: GLuint = 0;
     let vao: gl::GLuint = gl::gen_vertex_arrays(1)[0];
     gl::bind_vertex_array(vao);
 
@@ -22,6 +21,14 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
          0.5, -0.5,   0.0, 0.0, 1.0,   1.0, 1.0, // Bottom-right
         -0.5, -0.5,   1.0, 1.0, 1.0,   0.0, 1.0  // Bottom-left
     ];
+
+    // let vertices: [gl::GLfloat * 28] = [
+    // //   Position     Color            Texcoords
+    //     -0.5,  0.5,   1.0, 1.0, 1.0,   0.0, 0.0, // Top-left
+    //      0.5,  0.5,   1.0, 1.0, 1.0,   1.0, 0.0, // Top-right
+    //      0.5, -0.5,   1.0, 1.0, 1.0,   1.0, 1.0, // Bottom-right
+    //     -0.5, -0.5,   1.0, 1.0, 1.0,   0.0, 1.0  // Bottom-left
+    // ];
 
     gl::bind_buffer(gl::ARRAY_BUFFER, vbo);
     gl::buffer_data(gl::ARRAY_BUFFER, vertices, gl::STATIC_DRAW);
@@ -74,30 +81,36 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
 
                 let tex: gl::GLuint = gl::gen_textures(1)[0];
 
-                match imageio::load_with_depth(~"data/models/quad/sample.png", 0, false)
+                let image_path = ~"data/models/quad/sample.png";
+                // let image_path = ~"data/models/banana/Banana.jpg";
+
+                match imageio::load_with_depth(image_path, 4, false)
                 {
                     imageio::Error => fail!(~"error loading image"),
                     imageio::ImageF32(_) => fail!(~"error: F32 image format is not supported"),
                     imageio::ImageU8(img) => {
 
                         let d: &[u8] = img.data;
+                        let tex_trg = gl::TEXTURE_2D;
 
                         gl::tex_image_2d(
-                            gl::TEXTURE_2D,
+                            tex_trg,
                             0,
                             gl::RGB as gl::GLint,
                             img.width as gl::GLsizei,
                             img.height as gl::GLsizei,
                             0,
-                            gl::RGB,
+                            gl::RGBA,
                             gl::UNSIGNED_BYTE,
                             Some(d)
                         );
 
-                        gl::tex_parameter_i(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as gl::GLint);
-                        gl::tex_parameter_i(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as gl::GLint);
-                        gl::tex_parameter_i(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as gl::GLint);
-                        gl::tex_parameter_i(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as gl::GLint);
+                        gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as gl::GLint);
+                        gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as gl::GLint);
+                        // gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as gl::GLint);
+                        // gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as gl::GLint);
+                        gl::tex_parameter_i(tex_trg, gl::TEXTURE_MIN_FILTER, gl::LINEAR as gl::GLint);
+                        gl::tex_parameter_i(tex_trg, gl::TEXTURE_MAG_FILTER, gl::LINEAR as gl::GLint);
                     }
                 }
 
