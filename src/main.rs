@@ -3,18 +3,18 @@ extern mod opengles;
 extern mod std;
 extern mod stb_image;
 
-pub mod config;
 mod input;
-mod loader;
-pub mod scene;
-mod screen;
-mod util;
 #[path = "scenes/mod.rs"]
 mod scenes;
+mod screen;
+mod util;
+pub mod config;
+pub mod model;
+pub mod scene;
 
 // use scenefx = scenes::triangle;
-use scenefx = scenes::quad_tex;
-// use scenefx = scenes::quad_obj;
+// use scenefx = scenes::quad_tex;
+use scenefx = scenes::quad_obj;
 use util::println;
 
 fn main() {

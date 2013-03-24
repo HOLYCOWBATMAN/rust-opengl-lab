@@ -1,4 +1,3 @@
-// use core::io;
 use core::path;
 use core::str;
 use core::str::raw;
@@ -14,15 +13,15 @@ const KEY_F: &str      = "f";
 const KEY_USEMTL: &str = "usemtl";
 
 // expected number of numerical elements in a given entry
-const V_ELEM_COUNT: int  = 3;
-const VT_ELEM_COUNT: int = 2;
-const VN_ELEM_COUNT: int = 3;
+pub const V_ELEM_COUNT: int  = 3;
+pub const VT_ELEM_COUNT: int = 2;
+pub const VN_ELEM_COUNT: int = 3;
 
 pub struct ObjModel
 {
-    vertices: ~[float],
-    normals: ~[float],
-    texcoords: ~[float],
+    vertices: ~[f32],
+    normals: ~[f32],
+    texcoords: ~[f32],
     faces: ~[~Face],
     material: ~str
 }
@@ -45,7 +44,7 @@ impl FaceTriplet
     {
         return FaceTriplet
         {
-            v_idx:  if v < 0 { v } else { (v - 1)  * V_ELEM_COUNT },
+            v_idx:  if v < 0 { v } else { (v - 1) * V_ELEM_COUNT },
             vt_idx: if vt < 0 { vt } else { (vt - 1) * VT_ELEM_COUNT },
             vn_idx: if vn < 0 { vn } else { (vn - 1) * VN_ELEM_COUNT }
         };
@@ -163,25 +162,25 @@ fn parse_f_token(line: &str) -> ~[int]
         match int::from_str(tk)
         {
             Some(index) => index,
-            None => fail!(fmt!("cannot convert string: \"%s\" from line: \"%s\" to int", tk, line))
+            None => fail!(fmt!("cannot convert string: \"%s\" from line: \"%s\" to u32", tk, line))
         }
     }
 }
 
-fn next_flt(line: &str) -> (float, ~str)
+fn next_flt(line: &str) -> (f32, ~str)
 {
     match next_word(line)
     {
         (key, rest) =>
-            match float::from_str(key)
+            match f32::from_str(key)
             {
                 Some(flt) => (flt, rest),
-                None => fail!(fmt!("cannot convert string: \"%s\" to float", line))
+                None => fail!(fmt!("cannot convert string: \"%s\" to f32", line))
             }
     }
 }
 
-fn next_flts(amount: uint, line: &str, store: & mut ~[float]) -> ~str
+fn next_flts(amount: uint, line: &str, store: & mut ~[f32]) -> ~str
 {
     let mut index: uint = 0;
     let mut xs_line: ~str = line.to_str();
@@ -267,9 +266,9 @@ fn test_parse_v_line()
     parse_line(data, line);
 
     fail_unless!(vec::len(data.vertices) == 3);
-    fail_unless!(eq(data.vertices[0], 63.035789f));
-    fail_unless!(eq(data.vertices[1], 14.539266f));
-    fail_unless!(eq(data.vertices[2], -173.554443f));
+    fail_unless!(eq(data.vertices[0], 63.035789f32));
+    fail_unless!(eq(data.vertices[1], 14.539266f32));
+    fail_unless!(eq(data.vertices[2], -173.554443f32));
 }
 
 #[test]
@@ -280,8 +279,8 @@ fn test_parse_vt_line()
     parse_line(data, line);
 
     fail_unless!(vec::len(data.texcoords) == 2);
-    fail_unless!(eq(data.texcoords[0], 0.406606));
-    fail_unless!(eq(data.texcoords[1], 0.637478));
+    fail_unless!(eq(data.texcoords[0], 0.406606f32));
+    fail_unless!(eq(data.texcoords[1], 0.637478f32));
 }
 
 #[test]
@@ -292,9 +291,9 @@ fn test_parse_vn_line()
     parse_line(data, line);
 
     fail_unless!(vec::len(data.normals) == 3);
-    fail_unless!(eq(data.normals[0], 63.035789f));
-    fail_unless!(eq(data.normals[1], 14.539266f));
-    fail_unless!(eq(data.normals[2], -173.554443f));
+    fail_unless!(eq(data.normals[0], 63.035789f32));
+    fail_unless!(eq(data.normals[1], 14.539266f32));
+    fail_unless!(eq(data.normals[2], -173.554443f32));
 }
 
 #[test]
@@ -306,8 +305,10 @@ fn test_parse_f_v_line()
     parse_line(data, line);
 
     {
-        let face = &data.faces[0];
+        let f_lst = &data.faces;
+        let face = &f_lst[0];
 
+        fail_unless!(f_lst.len() == 1u);
         fail_unless!(vec::len(face.triplets) == 3);
         fail_unless_face_eq(&face.triplets[0], 0, -1, -1);
         fail_unless_face_eq(&face.triplets[1], 21, -1, -1);
@@ -358,9 +359,9 @@ fn fail_unless_face_eq(triplet: &FaceTriplet, v: int, vt: int, vn: int)
     fail_unless!(triplet.vn_idx == if vn < 0 { vn } else { vn * VN_ELEM_COUNT });
 }
 
-fn eq(a: float, b: float) -> bool
+fn eq(a: f32, b: f32) -> bool
 {
-    return float::abs(a - b) <= 1e-6;
+    return f32::abs(a - b) <= 1e-6;
 }
 
 #[test]
@@ -379,8 +380,8 @@ fn test_file_parse()
         vt 1.0 0.0\n\
         vt 1.0 1.0\n\
         vt 0.0 1.0\n\
-        f 0/0 1/1 2/2\n\
-        f 2/2 3/3 0/0
+        f 1/1 2/2 3/3\n\
+        f 3/3 4/4 1/1
     ";
 
     do with_str_reader(file_txt) |rdr| {
@@ -390,6 +391,16 @@ fn test_file_parse()
         fail_unless!(mdl.normals.len() == 0);
         fail_unless!(mdl.texcoords.len() == 8);
         fail_unless!(mdl.faces.len() == 2);
+
+        let f_0 = &mdl.faces[0];
+        fail_unless!(f_0.triplets[0].v_idx == 0 * V_ELEM_COUNT);
+        fail_unless!(f_0.triplets[1].v_idx == 1 * V_ELEM_COUNT);
+        fail_unless!(f_0.triplets[2].v_idx == 2 * V_ELEM_COUNT);
+
+        let f_1 = &mdl.faces[1];
+        fail_unless!(f_1.triplets[0].v_idx == 2 * V_ELEM_COUNT);
+        fail_unless!(f_1.triplets[1].v_idx == 3 * V_ELEM_COUNT);
+        fail_unless!(f_1.triplets[2].v_idx == 0 * V_ELEM_COUNT);
     }
 }
 

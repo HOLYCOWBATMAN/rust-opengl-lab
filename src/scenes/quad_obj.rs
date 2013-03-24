@@ -2,11 +2,75 @@ use config;
 use core::sys::size_of;
 use gl = opengles::gl3;
 use imageio = stb_image::image;
+use model;
 use scene;
-// use util::println;
+use util::println;
+
+fn model_to_flat_data(model: &model::ObjModel) -> (~[gl::GLfloat], ~[gl::GLuint])
+{
+    let v_lst            = &model.vertices;
+    let v_amt: uint      = model.vertices.len();
+    let v_stride: uint   = 3u;
+    let mut vi: uint     = 0u;
+
+    let vt_lst           = &model.texcoords;
+    let vt_amt: uint     = model.texcoords.len();
+    let vt_stride: uint  = 2u;
+    let mut vti: uint    = 0u;
+
+    let tgt_stride: uint = v_stride + vt_stride;
+    let mut tgti: uint   = 0;
+
+    let vtd_len           = v_amt + vt_amt;
+    let mut v_vt_data = vec::with_capacity(vtd_len);
+    unsafe { vec::raw::set_len(&mut v_vt_data, vtd_len); }
+
+    while(vi < v_amt)
+    {
+        v_vt_data[tgti]   = v_lst[vi];
+        v_vt_data[tgti+1] = v_lst[vi+1];
+        v_vt_data[tgti+2] = v_lst[vi+2];
+        v_vt_data[tgti+3] = vt_lst[vti];
+        v_vt_data[tgti+4] = vt_lst[vti+1];
+
+        vi   += v_stride;
+        vti  += vt_stride;
+        tgti += tgt_stride;
+    }
+
+    let f_lst          = &model.faces;
+    let f_amt: uint    = f_lst.len();
+    let f_stride: uint = 3u;
+    let mut ei: uint   = 0u;
+    let mut fi: uint   = 0u;
+    let elem_len       = f_amt * f_stride;
+    let mut e_data     = vec::with_capacity(elem_len);
+    unsafe { vec::raw::set_len(&mut e_data, elem_len); }
+
+    while(fi < f_amt)
+    {
+        let f: &model::Face = f_lst[fi];
+
+        e_data[ei]   = f.triplets[0].v_idx / model::V_ELEM_COUNT as u32;
+        e_data[ei+1] = f.triplets[1].v_idx / model::V_ELEM_COUNT as u32;
+        e_data[ei+2] = f.triplets[2].v_idx / model::V_ELEM_COUNT as u32;
+
+        ei += f_stride;
+        fi += 1u;
+    }
+
+    (v_vt_data, e_data)
+}
 
 pub fn init(width: i32, height: i32) -> ~scene::Scene
 {
+    let model_path = ~"data/models/quad/quad.obj";
+    // let model_path = ~"data/models/banana/Banana.obj";
+    // let model_path = ~"data/models/cube/cube.obj";
+    let (vertices, elements) = model_to_flat_data(model::obj_model_from_file(model_path));
+
+    println(fmt!("vertices: %?", vertices));
+
     // Create Vertex Array Object
     let vao: gl::GLuint = gl::gen_vertex_arrays(1)[0];
     gl::bind_vertex_array(vao);
@@ -14,24 +78,11 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
     // Create a Vertex Buffer Object and copy the vertex data to it
     let vbo: gl::GLuint = gl::gen_buffers(1)[0];
 
-    let vertices: [gl::GLfloat * 16] = [
-    //   Position     Texcoords
-        -0.5,  0.5,   0.0, 0.0, // Top-left
-         0.5,  0.5,   1.0, 0.0, // Top-right
-         0.5, -0.5,   1.0, 1.0, // Bottom-right
-        -0.5, -0.5,   0.0, 1.0  // Bottom-left
-    ];
-
     gl::bind_buffer(gl::ARRAY_BUFFER, vbo);
     gl::buffer_data(gl::ARRAY_BUFFER, vertices, gl::STATIC_DRAW);
 
     // Create an element array
     let ebo: gl::GLuint = gl::gen_buffers(1)[0];
-
-    let elements: [gl::GLuint * 6] = [
-        0, 1, 2,
-        2, 3, 0
-    ];
 
     gl::bind_buffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
     gl::buffer_data(gl::ELEMENT_ARRAY_BUFFER, elements, gl::STATIC_DRAW);
@@ -54,13 +105,13 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
             Ok(pgrm) => {
                 gl::use_program(pgrm);
 
-                let stride       = 4 * size_of::<gl::GLfloat>() as gl::GLsizei;
-                let tex_offset   = 2 * size_of::<gl::GLfloat>() as gl::GLuint;
+                let stride       = 5 * size_of::<gl::GLfloat>() as gl::GLsizei;
+                let tex_offset   = 3 * size_of::<gl::GLfloat>() as gl::GLuint;
 
                 // Specify the layout of the vertex data
                 let posAttrib = gl::get_attrib_location(pgrm, ~"position");
                 gl::enable_vertex_attrib_array(posAttrib);
-                gl::vertex_attrib_pointer_f32(posAttrib, 2, false, stride, 0);
+                gl::vertex_attrib_pointer_f32(posAttrib, 3, false, stride, 0);
 
                 let texAttrib = gl::get_attrib_location(pgrm, ~"texcoord");
                 gl::enable_vertex_attrib_array(texAttrib);
