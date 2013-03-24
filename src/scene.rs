@@ -5,28 +5,43 @@ use gl = opengles::gl3;
 
 pub struct Scene
 {
-    programs: ~[gl::GLuint],
-    shaders: ~[gl::GLuint],
+    programs: ~[ShaderProgram],
+    models: ~[Model]
+}
+
+pub struct Model
+{
     buffers: ~[gl::GLuint],
     vertex_arrays: ~[gl::GLuint],
     element_count: uint,
     textures: ~[gl::GLuint]
 }
 
+pub struct ShaderProgram
+{
+    id: gl::GLuint,
+    shaders: ~[gl::GLuint]
+}
+
 pub fn destroy(scene: &Scene)
 {
-    gl::delete_textures(scene.textures);
-
-    for scene.programs.each() |&program| {
-        gl::delete_program(program);
+    for scene.models.each() |&model|
+    {
+        gl::delete_textures(model.textures);
+        gl::delete_buffers(model.buffers);
+        gl::delete_vertex_arrays(model.vertex_arrays);
     }
 
-    for scene.shaders.each() |&shader| {
-        gl::delete_shader(shader);
-    }
+    for scene.programs.each() |&program|
+    {
+        for program.shaders.each() |&shader|
+        {
+            gl::detach_shader(program.id, shader);
+            gl::delete_shader(shader);
+        }
 
-    gl::delete_buffers(scene.buffers);
-    gl::delete_vertex_arrays(scene.vertex_arrays);
+        gl::delete_program(program.id);
+    }
 }
 
 pub fn load_shader(shader_type: gl::GLenum, file_path: &Path) -> Result<gl::GLuint, ~str>

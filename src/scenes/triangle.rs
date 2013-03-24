@@ -57,14 +57,22 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
                 gl::clear_color(0.1f32, 0.1f32, 0.1f32, 1f32);
                 gl::viewport(0, 0, width, height);
 
-                ~scene::Scene
-                {
-                    programs: ~[pgrm],
+                let program = scene::ShaderProgram {
+                    id: pgrm,
                     shaders: ~[frag_shdr, vert_shdr],
+                };
+
+                let model = scene::Model {
                     buffers: ~[vbo],
                     vertex_arrays: ~[vao],
                     element_count: 0,
                     textures: ~[]
+                };
+
+                ~scene::Scene
+                {
+                    programs: ~[program],
+                    models: ~[model]
                 }
             },
             Err(msg) => fail!(msg)
