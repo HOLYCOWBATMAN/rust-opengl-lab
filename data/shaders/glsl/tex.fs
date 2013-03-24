@@ -2,7 +2,9 @@
 in vec3 Color;
 in vec2 Texcoord;
 out vec4 outColor;
-uniform sampler2D tex;
+uniform float texAlpha;
+uniform sampler2D texHuis;
+uniform sampler2D texBanana;
 void main() {
-    outColor = texture(tex, Texcoord) * vec4(Color, 1.0);
+    outColor = mix(texture(texHuis, Texcoord), texture(texBanana, Texcoord), texAlpha);
 }

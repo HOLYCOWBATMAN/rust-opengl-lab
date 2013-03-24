@@ -71,7 +71,8 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
 
                 let tex: gl::GLuint = gl::gen_textures(1)[0];
 
-                let image_path = ~"data/models/banana/Banana.jpg";
+                // let image_path = ~"data/models/banana/Banana.png";
+                let image_path = ~"data/models/quad/huis1.png";
 
                 match imageio::load_with_depth(image_path, 3, false)
                 {
@@ -85,7 +86,7 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
                         gl::tex_image_2d(
                             tex_trg,
                             0,
-                            gl::RGB as gl::GLint,
+                            gl::RGB8 as gl::GLint,
                             img.width as gl::GLsizei,
                             img.height as gl::GLsizei,
                             0,
@@ -107,6 +108,7 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
                 let program = scene::ShaderProgram {
                     id: pgrm,
                     shaders: ~[frag_shdr, vert_shdr],
+                    uniforms: ~[]
                 };
 
                 let model = scene::Model {

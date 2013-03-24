@@ -1,9 +1,13 @@
 use config;
+use math = core::f64;
 use core::sys::size_of;
 use gl = opengles::gl3;
+use glfw;
 use imageio = stb_image::image;
 use scene;
 // use util::println;
+
+const UNIFORM_TEX_CONST: uint = 0;
 
 pub fn init(width: i32, height: i32) -> ~scene::Scene
 {
@@ -21,14 +25,6 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
          0.5, -0.5,   0.0, 0.0, 1.0,   1.0, 1.0, // Bottom-right
         -0.5, -0.5,   1.0, 1.0, 1.0,   0.0, 1.0  // Bottom-left
     ];
-
-    // let vertices: [gl::GLfloat * 28] = [
-    // //   Position     Color            Texcoords
-    //     -0.5,  0.5,   1.0, 1.0, 1.0,   0.0, 0.0, // Top-left
-    //      0.5,  0.5,   1.0, 1.0, 1.0,   1.0, 0.0, // Top-right
-    //      0.5, -0.5,   1.0, 1.0, 1.0,   1.0, 1.0, // Bottom-right
-    //     -0.5, -0.5,   1.0, 1.0, 1.0,   0.0, 1.0  // Bottom-left
-    // ];
 
     gl::bind_buffer(gl::ARRAY_BUFFER, vbo);
     gl::buffer_data(gl::ARRAY_BUFFER, vertices, gl::STATIC_DRAW);
@@ -79,40 +75,11 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
                 gl::enable_vertex_attrib_array(texAttrib);
                 gl::vertex_attrib_pointer_f32(texAttrib, 2, false, stride, tex_offset);
 
-                let tex: gl::GLuint = gl::gen_textures(1)[0];
+                let texAlphaLoc = gl::get_uniform_location(pgrm, ~"texAlpha");
 
-                let image_path = ~"data/models/quad/sample.png";
-                // let image_path = ~"data/models/banana/Banana.jpg";
-
-                match imageio::load_with_depth(image_path, 4, false)
-                {
-                    imageio::Error => fail!(~"error loading image"),
-                    imageio::ImageF32(_) => fail!(~"error: F32 image format is not supported"),
-                    imageio::ImageU8(img) => {
-
-                        let d: &[u8] = img.data;
-                        let tex_trg = gl::TEXTURE_2D;
-
-                        gl::tex_image_2d(
-                            tex_trg,
-                            0,
-                            gl::RGB as gl::GLint,
-                            img.width as gl::GLsizei,
-                            img.height as gl::GLsizei,
-                            0,
-                            gl::RGBA,
-                            gl::UNSIGNED_BYTE,
-                            Some(d)
-                        );
-
-                        gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as gl::GLint);
-                        gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as gl::GLint);
-                        // gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as gl::GLint);
-                        // gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as gl::GLint);
-                        gl::tex_parameter_i(tex_trg, gl::TEXTURE_MIN_FILTER, gl::LINEAR as gl::GLint);
-                        gl::tex_parameter_i(tex_trg, gl::TEXTURE_MAG_FILTER, gl::LINEAR as gl::GLint);
-                    }
-                }
+                let tex_names = load_textures(pgrm, ~[
+                    (~"data/models/quad/huis1.png", ~"texHuis"),
+                    (~"data/models/banana/Banana.jpg", ~"texBanana")]);
 
                 gl::clear_color(0.1f32, 0.1f32, 0.1f32, 1f32);
                 gl::viewport(0, 0, width, height);
@@ -120,13 +87,14 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
                 let program = scene::ShaderProgram {
                     id: pgrm,
                     shaders: ~[frag_shdr, vert_shdr],
+                    uniforms: ~[texAlphaLoc]
                 };
 
                 let model = scene::Model {
                     buffers: ~[vbo],
                     vertex_arrays: ~[vao],
                     element_count: elements.len(),
-                    textures: ~[tex]
+                    textures: tex_names
                 };
 
                 ~scene::Scene
@@ -140,8 +108,67 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
     }
 }
 
+fn load_textures(pgrm: gl::GLuint, path_bind_tpl: ~[(~str, ~str)]) -> ~[gl::GLuint]
+{
+    let tex_amount = path_bind_tpl.len();
+    let tex_names  = gl::gen_textures(tex_amount as gl::GLsizei);
+
+    for path_bind_tpl.eachi |idx, &tpl| {
+        match tpl {
+            (image_path, binding) => load_texture(pgrm, idx, tex_names[idx], image_path, binding)
+        }
+    }
+
+    tex_names
+}
+
+fn load_texture(pgrm: gl::GLuint, tex_index: uint, tex_name: gl::GLuint, image_path: ~str, bind_name: ~str)
+{
+    match imageio::load_with_depth(image_path, 3, false)
+    {
+        imageio::Error => fail!(~"error loading image"),
+        imageio::ImageF32(_) => fail!(~"error: F32 image format is not supported"),
+        imageio::ImageU8(img) => {
+
+            let d: &[u8] = img.data;
+            let tex_trg  = gl::TEXTURE_2D;
+            let tex_slot = gl::TEXTURE_SLOT[tex_index];
+
+            gl::active_texture(tex_slot);
+            gl::bind_texture(tex_trg, tex_name);
+
+            let u_loc = gl::get_uniform_location(pgrm, bind_name);
+            gl::uniform_1i(u_loc, tex_index as gl::GLint);
+
+            gl::tex_image_2d(
+                tex_trg,
+                0,
+                gl::RGB as gl::GLint,
+                img.width as gl::GLsizei,
+                img.height as gl::GLsizei,
+                0,
+                gl::RGB,
+                gl::UNSIGNED_BYTE,
+                Some(d)
+            );
+
+            gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as gl::GLint);
+            gl::tex_parameter_i(tex_trg, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as gl::GLint);
+            gl::tex_parameter_i(tex_trg, gl::TEXTURE_MIN_FILTER, gl::LINEAR as gl::GLint);
+            gl::tex_parameter_i(tex_trg, gl::TEXTURE_MAG_FILTER, gl::LINEAR as gl::GLint);
+        }
+    }
+}
+
 pub fn draw(scene: &scene::Scene)
 {
+    let pgrm        = &scene.programs[0];
+    let time        = glfw::get_time();
+    let texAlphaLoc = pgrm.uniforms[UNIFORM_TEX_CONST];
+    let u           = ((1f64 + math::cos(time)) * 0.5f64) as f32;
+    gl::uniform_1f(texAlphaLoc as gl::GLint, u);
+
+    let model = &scene.models[0];
     gl::clear(gl::COLOR_BUFFER_BIT);
-    gl::draw_elements_u8(gl::TRIANGLES, scene.models[0].element_count as gl::GLsizei, None);
+    gl::draw_elements_u8(gl::TRIANGLES, model.element_count as gl::GLsizei, None);
 }

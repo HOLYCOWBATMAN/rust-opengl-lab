@@ -20,7 +20,8 @@ pub struct Model
 pub struct ShaderProgram
 {
     id: gl::GLuint,
-    shaders: ~[gl::GLuint]
+    shaders: ~[gl::GLuint],
+    uniforms: ~[gl::GLint]
 }
 
 pub fn destroy(scene: &Scene)

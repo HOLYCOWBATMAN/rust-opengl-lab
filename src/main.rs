@@ -13,8 +13,8 @@ mod util;
 mod scenes;
 
 // use scenefx = scenes::triangle;
-// use scenefx = scenes::quad_tex;
-use scenefx = scenes::quad_obj;
+use scenefx = scenes::quad_tex;
+// use scenefx = scenes::quad_obj;
 use util::println;
 
 fn main() {

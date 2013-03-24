@@ -60,6 +60,7 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
                 let program = scene::ShaderProgram {
                     id: pgrm,
                     shaders: ~[frag_shdr, vert_shdr],
+                    uniforms: ~[]
                 };
 
                 let model = scene::Model {
