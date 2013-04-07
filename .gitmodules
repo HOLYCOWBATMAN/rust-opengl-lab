@@ -1,0 +1,15 @@
+[submodule "submodules/glcore-rs"]
+	path = submodules/glcore-rs
+	url = git://github.com/bjz/glcore-rs.git
+[submodule "submodules/lmath-rs"]
+	path = submodules/lmath-rs
+	url = git://github.com/bjz/lmath-rs.git
+[submodule "submodules/numeric-rs"]
+	path = submodules/numeric-rs
+	url = git://github.com/bjz/numeric-rs.git
+[submodule "submodules/glfw-rs"]
+	path = submodules/glfw-rs
+	url = git://github.com/bjz/glfw-rs.git
+[submodule "submodules/rust-stb-image"]
+	path = submodules/rust-stb-image
+	url = git://github.com/mozilla-servo/rust-stb-image.git
