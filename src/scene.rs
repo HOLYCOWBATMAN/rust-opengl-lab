@@ -128,7 +128,7 @@ pub fn read_file(file_path: &Path) -> Result<~[~[u8]], ~str>
 
 /// Unwraps a result, assuming it is an `ok(T)`
 #[inline(always)]
-pub pure fn unwrap<T>(res: Result<T, ~str>, append: fn (&str) -> ~str) -> T {
+pub fn unwrap<T>(res: Result<T, ~str>, append: &fn (&str) -> ~str) -> T {
     match res {
       Ok(t) => t,
       Err(msg_callee) =>

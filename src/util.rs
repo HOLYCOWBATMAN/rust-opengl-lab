@@ -10,13 +10,3 @@ pub fn println(s: &str) {
         libc::write(2, transmute(&'\n'), 1);
     }
 }
-
-#[cfg(debug)]
-pub fn debug_assert(cond: bool, msg: &static/str) {
-    if !cond {
-        println(msg);
-    }
-}
-
-#[cfg(ndebug)]
-pub fn debug_assert(_: bool, _: &static/str) {}

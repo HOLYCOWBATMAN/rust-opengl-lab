@@ -11,6 +11,16 @@ define GLFW_INCLUDE_GLCOREARB if on osx so that opengl 3.2 is used
 
 build stb_image
 
+# Components
+
+## stb_image
+servo is using this binding and have plans to replace it with something faster.
+Keep an eye on an implementation coming out of servo.
+
+## model loader
+
+TODO: Make a command line tool for converting .obj files into an interleaved stream of coords.
+
 # notes
 rust now uses absolute imports only
 the prelude contains a minimal set of implicit includes

@@ -1,72 +1,59 @@
 extern mod glfw;
+extern mod lmath;
+extern mod numeric;
 extern mod opengles;
-extern mod std;
 extern mod stb_image;
+extern mod std;
 
-mod input;
+// use scenefx = scenes::triangle;
+use scenefx = scenes::quad_tex;
+// use scenefx = scenes::quad_obj;
+// use util::println;
+
+// mod input;
+// #[path = "io/mod.rs"]
+// mod io;
+pub mod math;
 #[path = "scenes/mod.rs"]
 mod scenes;
 mod screen;
 mod util;
 pub mod config;
-pub mod model;
 pub mod scene;
 
-// use scenefx = scenes::triangle;
-// use scenefx = scenes::quad_tex;
-use scenefx = scenes::quad_obj;
-use util::println;
-
+#[main]
 fn main() {
-    // Run this task on the main thread. Unlike C or C++, a Rust program
-    // automatically starts a new thread, so this line is _essential_ to ensure
-    // that the OS is able to update the window and recieve events from the user.
-    do task::spawn_sched(task::PlatformThread) {
-        use core::unstable::finally::Finally;
+    do glfw::spawn ||
+    {
+        glfw::set_error_callback(error_callback);
 
-        do (|| {
-            glfw::set_error_callback(error_callback);
+        let (mode, monitor) = screen::select_best_mode();
 
-            if !glfw::init()
-            {
-                glfw::terminate();
-                fail!(~"Failed to initialize GLFW\n");
-            }
+        // Choose a GL profile that is compatible with OS X 10.7+
+        glfw::window_hint(glfw::CONTEXT_VERSION_MAJOR, 3);
+        glfw::window_hint(glfw::CONTEXT_VERSION_MINOR, 2);
+        glfw::window_hint(glfw::OPENGL_FORWARD_COMPAT, 1);
+        glfw::window_hint(glfw::OPENGL_PROFILE, glfw::OPENGL_CORE_PROFILE);
 
-            let (mode, monitor) = screen::select_best_mode();
+        let window =
+            match glfw::Window::create(mode.width as uint, mode.height as uint, "Hello this is window", glfw::FullScreen(monitor)) {
+                Some(w) => w,
+                None    => fail!(~"Failed to open GLFW window")
+            };
 
-            // Choose a GL profile that is compatible with OS X 10.7+
-            glfw::window_hint(glfw::CONTEXT_VERSION_MAJOR, 3);
-            glfw::window_hint(glfw::CONTEXT_VERSION_MINOR, 2);
-            glfw::window_hint(glfw::OPENGL_FORWARD_COMPAT, 1);
-            glfw::window_hint(glfw::OPENGL_PROFILE, glfw::OPENGL_CORE_PROFILE);
-            // glfw::window_hint(glfw::CLIENT_API, glfw::OPENGL_ES_API);
+        window.set_key_callback(key_callback);
+        window.make_context_current();
 
-            let window =
-                match glfw::Window::create(mode.width as uint, mode.height as uint, "Hello this is window", glfw::FullScreen(monitor)) {
-                    Some(w) => w,
-                    None    => fail!(~"Failed to open GLFW window")
-                };
+        println(screen::gl_report());
+        let scn = scenefx::init(mode.width, mode.height);
 
-            window.set_key_callback(key_callback);
-            window.make_context_current();
-
-            println(screen::gl_report());
-            // scene::init();
-            let scn = scenefx::init(mode.width, mode.height);
-
-            while !window.should_close() {
-                glfw::poll_events();
-                scenefx::draw(scn);
-                window.swap_buffers();
-            }
-
-            scene::destroy(scn);
-
-        }).finally {
-
-            glfw::terminate();    // terminate glfw on completion
+        while !window.should_close() {
+            glfw::poll_events();
+            scenefx::draw(scn);
+            window.swap_buffers();
         }
+
+        scene::destroy(scn);
     }
 }
 

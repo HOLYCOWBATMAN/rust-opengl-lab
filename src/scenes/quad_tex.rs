@@ -1,13 +1,18 @@
 use config;
-use math = core::f64;
 use core::sys::size_of;
 use gl = opengles::gl3;
 use glfw;
 use imageio = stb_image::image;
+use lmath::mat::*;
+use lmath::vec::*;
+use math = core::f32;
+// use glm = math;
+use numeric::float::Float::*;
 use scene;
 // use util::println;
 
-const UNIFORM_TEX_CONST: uint = 0;
+static UNIFORM_TEX_CONST: uint  = 0;
+static UNIFORM_MAT4_TRANS: uint = 1;
 
 pub fn init(width: i32, height: i32) -> ~scene::Scene
 {
@@ -18,7 +23,7 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
     // Create a Vertex Buffer Object and copy the vertex data to it
     let vbo: gl::GLuint = gl::gen_buffers(1)[0];
 
-    let vertices: [gl::GLfloat * 28] = [
+    let vertices: [gl::GLfloat, ..28] = [
     //   Position     Color            Texcoords
         -0.5,  0.5,   1.0, 0.0, 0.0,   0.0, 0.0, // Top-left
          0.5,  0.5,   0.0, 1.0, 0.0,   1.0, 0.0, // Top-right
@@ -32,7 +37,7 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
     // Create an element array
     let ebo: gl::GLuint = gl::gen_buffers(1)[0];
 
-    let elements: [gl::GLuint * 6] = [
+    let elements: [gl::GLuint, ..6] = [
         0, 1, 2,
         2, 3, 0
     ];
@@ -75,7 +80,13 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
                 gl::enable_vertex_attrib_array(texAttrib);
                 gl::vertex_attrib_pointer_f32(texAttrib, 2, false, stride, tex_offset);
 
-                let texAlphaLoc = gl::get_uniform_location(pgrm, ~"texAlpha");
+                // let _proj = glm::perspective( 45.0f32, 800.0f32 / 600.0f32, 1.0f32, 10.0f32 );
+
+                let projLoc      = gl::get_uniform_location(pgrm, ~"proj");
+                let mat4TransLoc = gl::get_uniform_location(pgrm, ~"trans");
+                let texAlphaLoc  = gl::get_uniform_location(pgrm, ~"texAlpha");
+
+                // gl::ll::glUniformMatrix4fv(projLoc, 1, gl::FALSE as u8, proj.to_mat4().to_ptr());
 
                 let tex_names = load_textures(pgrm, ~[
                     (~"data/models/quad/huis1.png", ~"texHuis"),
@@ -87,7 +98,7 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
                 let program = scene::ShaderProgram {
                     id: pgrm,
                     shaders: ~[frag_shdr, vert_shdr],
-                    uniforms: ~[texAlphaLoc]
+                    uniforms: ~[texAlphaLoc, mat4TransLoc, projLoc]
                 };
 
                 let model = scene::Model {
@@ -106,6 +117,17 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
             Err(msg) => fail!(msg)
         }
     }
+}
+
+fn position_scene()
+{
+    // let trans = mat3::from_angle_z(frac_pi_2());
+    // let vA = Vec3{ x:1.0f, y:2.0f, z:0.0f };
+    // let vB = Vec3{ x:0.0f, y:2.0f, z:1.0f };
+
+    // let vC = vA.add_v(&vB);
+    // trans.
+    // println(fmt!("vC: %?", vC));
 }
 
 fn load_textures(pgrm: gl::GLuint, path_bind_tpl: ~[(~str, ~str)]) -> ~[gl::GLuint]
@@ -163,10 +185,17 @@ fn load_texture(pgrm: gl::GLuint, tex_index: uint, tex_name: gl::GLuint, image_p
 pub fn draw(scene: &scene::Scene)
 {
     let pgrm        = &scene.programs[0];
-    let time        = glfw::get_time();
+    let time        = glfw::get_time() as f32;
     let texAlphaLoc = pgrm.uniforms[UNIFORM_TEX_CONST];
-    let u           = ((1f64 + math::cos(time)) * 0.5f64) as f32;
+    let u           = ((1f32 + math::cos(time)) * 0.5f32);
     gl::uniform_1f(texAlphaLoc as gl::GLint, u);
+
+    let mat4TransLoc = pgrm.uniforms[UNIFORM_MAT4_TRANS];
+    let rad          = time * 0.5f32 * pi();
+    let trans        = mat3::from_angle_z(rad);
+    // let v = vec3::new (1f32, 0f32, 1f32);
+    // let v = Vector3::new(1f32, 0f32, 1f32);
+    gl::ll::glUniformMatrix4fv(mat4TransLoc, 1, gl::FALSE as u8, trans.to_mat4().to_ptr());
 
     let model = &scene.models[0];
     gl::clear(gl::COLOR_BUFFER_BIT);

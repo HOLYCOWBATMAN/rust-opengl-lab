@@ -13,7 +13,7 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
     // Create a Vertex Buffer Object and copy the vertex data to it
     let vbo: gl::GLuint = gl::gen_buffers(1)[0];
 
-    let vertices: [gl::GLfloat * 15] = [
+    let vertices: [gl::GLfloat, ..15] = [
          0.0,  0.5,   1.0, 0.0, 0.0,
          0.5, -0.5,   0.0, 1.0, 0.0,
         -0.5, -0.5,   0.0, 0.0, 1.0
