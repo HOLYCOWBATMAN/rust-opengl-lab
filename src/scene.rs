@@ -1,5 +1,4 @@
 use core::io::ReaderUtil;
-// use core::ptr::to_unsafe_ptr;
 use core::str::from_bytes;
 use core::vec::from_elem;
 use core::vec::raw::to_ptr;
