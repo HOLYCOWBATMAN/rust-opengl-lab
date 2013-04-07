@@ -1,12 +1,11 @@
+use glcore::*;
 use glfw;
-// use opengles::gl3;
-use gl = opengles::gl3;
 
 pub fn gl_report() -> ~str
 {
     let glfw_version = glfw::get_version();
-    let gl_version   = gl::get_string(gl::VERSION);
-    let sl_ver       = gl::get_string(gl::SHADING_LANGUAGE_VERSION);
+    let gl_version   = unsafe { str::raw::from_buf(glGetString(GL_VERSION)) };
+    let sl_ver       = unsafe { str::raw::from_buf(glGetString(GL_SHADING_LANGUAGE_VERSION)) };
 
     fmt!(
     "

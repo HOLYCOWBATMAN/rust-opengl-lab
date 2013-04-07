@@ -1,25 +1,10 @@
-extern mod glfw;
-extern mod lmath;
-extern mod numeric;
-extern mod opengles;
-extern mod stb_image;
-extern mod std;
-
-// use scenefx = scenes::triangle;
-use scenefx = scenes::quad_tex;
+use glfw;
+use scenefx = scenes::triangle;
 // use scenefx = scenes::quad_obj;
+// use scenefx = scenes::quad_tex;
 // use util::println;
-
-// mod input;
-// #[path = "io/mod.rs"]
-// mod io;
-pub mod math;
-#[path = "scenes/mod.rs"]
-mod scenes;
-mod screen;
-mod util;
-pub mod config;
-pub mod scene;
+use scene;
+use screen;
 
 #[main]
 fn main() {

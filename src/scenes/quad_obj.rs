@@ -1,6 +1,7 @@
-use config;
 use core::sys::size_of;
-use gl = opengles::gl3;
+
+use config;
+use glcore::*;
 use imageio = stb_image::image;
 // use io::model::obj_model_from_file;
 // use io::translate::model_to_flat_data;

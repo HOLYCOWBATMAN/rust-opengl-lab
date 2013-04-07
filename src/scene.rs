@@ -1,7 +1,13 @@
-// use gl = opengles::gl2;
 use core::io::ReaderUtil;
-use gl = opengles::gl3;
-// use util::println;
+// use core::ptr::to_unsafe_ptr;
+use core::str::from_bytes;
+use core::vec::from_elem;
+use core::vec::raw::to_ptr;
+use glcore::*;
+
+fn destroy_T<T>(_x: T) {
+    // Just let the object drop.
+}
 
 pub struct Scene
 {
@@ -11,45 +17,59 @@ pub struct Scene
 
 pub struct Model
 {
-    buffers: ~[gl::GLuint],
-    vertex_arrays: ~[gl::GLuint],
+    buffers: ~[GLuint],
+    vertex_arrays: ~[GLuint],
     element_count: uint,
-    textures: ~[gl::GLuint]
+    textures: ~[GLuint]
 }
 
 pub struct ShaderProgram
 {
-    id: gl::GLuint,
-    shaders: ~[gl::GLuint],
-    uniforms: ~[gl::GLint]
+    id: GLuint,
+    shaders: ~[GLuint],
+    uniforms: ~[GLint]
 }
 
 pub fn destroy(scene: &Scene)
 {
     for scene.models.each() |&model|
     {
-        gl::delete_textures(model.textures);
-        gl::delete_buffers(model.buffers);
-        gl::delete_vertex_arrays(model.vertex_arrays);
+        let t_len = model.textures.len();
+        if t_len > 0
+        {
+            glDeleteTextures(t_len as GLint, &model.textures[0]);
+        }
+
+        let b_len = model.buffers.len();
+        if b_len > 0
+        {
+            glDeleteBuffers(b_len as GLint, &model.buffers[0]);
+        }
+
+        let v_len = model.vertex_arrays.len();
+        if v_len > 0
+        {
+            glDeleteVertexArrays(v_len as GLint, &model.vertex_arrays[0]);
+        }
     }
 
     for scene.programs.each() |&program|
     {
         for program.shaders.each() |&shader|
         {
-            gl::detach_shader(program.id, shader);
-            gl::delete_shader(shader);
+            glDetachShader(program.id, shader);
+            glDeleteShader(shader);
         }
 
-        gl::delete_program(program.id);
+        glDeleteProgram(program.id);
     }
 }
 
-pub fn load_shader(shader_type: gl::GLenum, file_path: &Path) -> Result<gl::GLuint, ~str>
+pub fn load_shader(shader_type: GLenum, file_path: &Path) -> Result<GLuint, ~str>
 {
-    do read_file(file_path).chain |file_bytes|
+    do read_file(file_path).chain |file_lines|
     {
-        let shader = gl::create_shader(shader_type);
+        let shader = glCreateShader(shader_type);
 
         if (shader == 0)
         {
@@ -57,16 +77,25 @@ pub fn load_shader(shader_type: gl::GLenum, file_path: &Path) -> Result<gl::GLui
         }
         else
         {
-            gl::shader_source(shader, file_bytes);
-            gl::compile_shader(shader);
+            unsafe {
+                let pointers = file_lines.map(|file_lines| to_ptr(*file_lines));
+                let lengths  = file_lines.map(|file_lines| file_lines.len() as GLint);
+                glShaderSource(shader, pointers.len() as GLsizei,
+                                   to_ptr(pointers) as **GLchar, to_ptr(lengths));
+                destroy_T(lengths);
+                destroy_T(pointers);
+            }
 
-            let status = gl::get_shader_iv(shader, gl::COMPILE_STATUS);
+            glCompileShader(shader);
+
+            let status: GLint = 0;
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
 
             match status
             {
                 0 => {
-                    let log_entry = gl::get_shader_info_log(shader);
-                    gl::delete_shader(shader);
+                    let log_entry = get_shader_info_log(shader);
+                    glDeleteShader(shader);
                     Err(log_entry)
                 },
                 _ => {
@@ -77,33 +106,59 @@ pub fn load_shader(shader_type: gl::GLenum, file_path: &Path) -> Result<gl::GLui
     }
 }
 
+pub fn get_shader_info_log(shader: GLuint) -> ~str {
+    unsafe {
+        let result = from_elem(1024u, 0u8);
+        let result_len: GLsizei = 0 as GLsizei;
+        glGetShaderInfoLog(shader,
+                               1024 as GLsizei,
+                               &result_len,
+                               to_ptr(result) as *GLchar);
+        return from_bytes(result);
+    }
+}
+
+pub fn get_program_info_log(program: GLuint) -> ~str {
+    unsafe {
+        let result = from_elem(1024u, 0u8);
+        let result_len: GLsizei = 0 as GLsizei;
+        glGetProgramInfoLog(program,
+                               1024 as GLsizei,
+                               &result_len,
+                               to_ptr(result) as *GLchar);
+        return from_bytes(result);
+    }
+}
+
 // fn link_program(pgrm: gl::GLuint, bindings: ~[~str]) -> Result<gl::GLuint, ~str>
-pub fn link_program(pgrm: gl::GLuint) -> Result<gl::GLuint, ~str>
+pub fn link_program(pgrm: GLuint) -> Result<GLuint, ~str>
 {
     // for bindings.eachi |i, &var_name|
     // {
         //gl::bind_attrib_location(pgrm, i as u32, var_name);
     // }
 
-    gl::link_program(pgrm);
+    glLinkProgram(pgrm);
+    let link_status: GLint = 0;
+    glGetProgramiv(pgrm, GL_LINK_STATUS, &link_status);
 
-    match gl::get_program_iv(pgrm, gl::LINK_STATUS)
+    match link_status
     {
         0 => {
-            let log_entry = gl::get_program_info_log(pgrm);
-            gl::delete_program(pgrm);
+            let log_entry = get_program_info_log(pgrm);
+            glDeleteProgram(pgrm);
             Err(log_entry)
         }
         _ => Ok(pgrm)
     }
 }
 
-pub fn attach_shader_from_file(pgrm: gl::GLuint, shader_type: gl::GLenum, file_path: &Path) -> gl::GLuint
+pub fn attach_shader_from_file(pgrm: GLuint, shader_type: GLenum, file_path: &Path) -> GLuint
 {
     unwrap(
         do load_shader(shader_type, file_path).map |&shdr|
         {
-            gl::attach_shader(pgrm, shdr);
+            glAttachShader(pgrm, shdr);
             shdr
         },
         |msg| fmt!("Shader %s in file: %s", msg, file_path.to_str())

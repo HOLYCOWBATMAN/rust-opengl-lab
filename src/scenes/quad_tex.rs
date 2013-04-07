@@ -1,12 +1,11 @@
 use config;
 use core::sys::size_of;
-use gl = opengles::gl3;
+use glcore::*;
 use glfw;
 use imageio = stb_image::image;
 use lmath::mat::*;
 use lmath::vec::*;
 use math = core::f32;
-// use glm = math;
 use numeric::float::Float::*;
 use scene;
 // use util::println;

@@ -1,9 +1,8 @@
 LIB_DIR := lib
-OPENGL_DIR := /System/Library/Frameworks/OpenGL.framework/Libraries
 
 RUSTC?=rustc
 RUSTFLAGS?=--cfg debug --cfg ncpuspew -O
-RUSTLDFLAGS?=-L $(LIB_DIR) -L $(OPENGL_DIR)
+RUSTLDFLAGS?=-L $(LIB_DIR)
 
 GLCORE_BASE_DIR?=submodules/glcore-rs
 GLCORE_LIB_DIR?=$(GLCORE_BASE_DIR)/lib
@@ -26,7 +25,7 @@ all:	rustlab
 
 RUST_SRC = $(shell find src -type f -name '*.rs')
 
-rustlab: src/main.rs $(RUST_SRC)
+rustlab: src/rustlab.rs $(RUST_SRC)
 	$(RUSTC) $(RUSTFLAGS) $(RUSTLDFLAGS) $< -o $@
 	touch $@
 
