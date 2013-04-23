@@ -2,7 +2,10 @@ use core::io::ReaderUtil;
 use core::str::from_bytes;
 use core::vec::from_elem;
 use core::vec::raw::to_ptr;
+
+use camera::*;
 use glcore::*;
+// use glfw;
 
 fn destroy_T<T>(_x: T) {
     // Just let the object drop.
@@ -11,7 +14,59 @@ fn destroy_T<T>(_x: T) {
 pub struct Scene
 {
     programs: ~[ShaderProgram],
-    models: ~[Model]
+    models: ~[Model],
+    camera: Camera
+}
+
+pub trait KeyInputHandler
+{
+    fn on_key(&self, key: libc::c_int, action: libc::c_int);
+}
+
+impl KeyInputHandler for Scene
+{
+    fn on_key(&self, _key: libc::c_int, _action: libc::c_int)
+    {
+
+    }
+}
+
+impl Drop for Scene
+{
+    pub fn finalize(&self)
+    {
+        for self.models.each() |&model|
+        {
+            let t_len = model.textures.len();
+            if t_len > 0
+            {
+                glDeleteTextures(t_len as GLint, &model.textures[0]);
+            }
+
+            let b_len = model.buffers.len();
+            if b_len > 0
+            {
+                glDeleteBuffers(b_len as GLint, &model.buffers[0]);
+            }
+
+            let v_len = model.vertex_arrays.len();
+            if v_len > 0
+            {
+                glDeleteVertexArrays(v_len as GLint, &model.vertex_arrays[0]);
+            }
+        }
+
+        for self.programs.each() |&program|
+        {
+            for program.shaders.each() |&shader|
+            {
+                glDetachShader(program.id, shader);
+                glDeleteShader(shader);
+            }
+
+            glDeleteProgram(program.id);
+        }
+    }
 }
 
 pub struct Model
@@ -27,41 +82,6 @@ pub struct ShaderProgram
     id: GLuint,
     shaders: ~[GLuint],
     uniforms: ~[GLint]
-}
-
-pub fn destroy(scene: &Scene)
-{
-    for scene.models.each() |&model|
-    {
-        let t_len = model.textures.len();
-        if t_len > 0
-        {
-            glDeleteTextures(t_len as GLint, &model.textures[0]);
-        }
-
-        let b_len = model.buffers.len();
-        if b_len > 0
-        {
-            glDeleteBuffers(b_len as GLint, &model.buffers[0]);
-        }
-
-        let v_len = model.vertex_arrays.len();
-        if v_len > 0
-        {
-            glDeleteVertexArrays(v_len as GLint, &model.vertex_arrays[0]);
-        }
-    }
-
-    for scene.programs.each() |&program|
-    {
-        for program.shaders.each() |&shader|
-        {
-            glDetachShader(program.id, shader);
-            glDeleteShader(shader);
-        }
-
-        glDeleteProgram(program.id);
-    }
 }
 
 pub fn load_shader(shader_type: GLenum, file_path: &Path) -> Result<GLuint, ~str>

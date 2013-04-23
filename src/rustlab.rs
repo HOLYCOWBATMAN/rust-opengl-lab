@@ -5,15 +5,13 @@ extern mod numeric;
 extern mod stb_image;
 extern mod std;
 
-pub mod main;
-
-// mod input;
-// #[path = "io/mod.rs"]
-// mod io;
-pub mod math;
-#[path = "scenes/mod.rs"]
-pub mod scenes;
-pub mod screen;
-pub mod util;
+pub mod camera;
 pub mod config;
+// mod input;
+#[path = "io/mod.rs"] mod io;
+pub mod main;
+pub mod math;
 pub mod scene;
+#[path = "scenes/mod.rs"] pub mod scenes;
+pub mod screen;
+// pub mod util;

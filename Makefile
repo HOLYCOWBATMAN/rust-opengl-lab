@@ -26,7 +26,8 @@ all:	rustlab
 RUST_SRC = $(shell find src -type f -name '*.rs')
 
 rustlab: src/rustlab.rs $(RUST_SRC)
-	$(RUSTC) $(RUSTFLAGS) $(RUSTLDFLAGS) $< -o $@
+	RUST_LOG=rustc=1,::rt::backtrace $(RUSTC) $(RUSTFLAGS) $(RUSTLDFLAGS) $< -o $@
+	# $(RUSTC) $(RUSTFLAGS) $(RUSTLDFLAGS) $< -o $@
 	touch $@
 
 unittest: src/main.rs $(RUST_SRC)
@@ -78,6 +79,9 @@ lib-rust-stb-image:
 .PHONY: clean
 clean:
 	rm -f rustlab
+	rm -rf rustlab.dSYM
+	rm -f unittest
+	rm -rf unittest.dSYM
 
 run: rustlab
 	./rustlab

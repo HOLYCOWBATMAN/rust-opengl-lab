@@ -1,5 +1,8 @@
 use core::sys::size_of;
 
+use lmath::vec::*;
+
+use camera::*;
 use config;
 use glcore::*;
 use scene;
@@ -80,7 +83,12 @@ pub fn init(width: i32, height: i32) -> ~scene::Scene
                 ~scene::Scene
                 {
                     programs: ~[program],
-                    models: ~[model]
+                    models: ~[model],
+                    camera: Camera::look_at(
+                        &vec3::new(0f32, 0f32, -1f32),
+                        &vec3::identity(),
+                        &vec3::unit_y()
+                    )
                 }
             },
             Err(msg) => fail!(msg)

@@ -30,8 +30,16 @@ pub fn select_best_mode() -> (glfw::VidMode, glfw::Monitor)
     // });
 
     let monitor   = glfw::get_primary_monitor();
-    let modes     = monitor.get_video_modes();
-    let mode_best = *vec::last(modes);
+    // let modes     = monitor.get_video_modes();
+    // let mode_best = *vec::last(modes);
+
+    let mode_best = glfw::VidMode {
+        width      : 1024,
+        height     : 768,
+        redBits    : 8,
+        blueBits   : 8,
+        greenBits  : 8,
+    };
 
     (mode_best, monitor)
 }

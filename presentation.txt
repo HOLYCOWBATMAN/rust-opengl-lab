@@ -1,0 +1,94 @@
+Rust is an attempt to blend...
+
+    the memory model from C
+    performance philosophy and smart pointers from C++
+    type classes from Haskell
+    style light weight tasks from Erlang
+
+# the memory model of C
+
+http://pcwalton.github.com/blog/2013/03/18/an-overview-of-memory-management-in-rust/
+
+direct control
+deterministic layout
+stack and heap control
+
+regions
+
+    borrowed pointers are assigned a region
+    this is implicity assigned for the most part
+
+# smart pointer of C++
+
+~T
+    unique pointer to a T.
+    points to memory on 'send heap'.
+    copy must be explicit and is always deep.
+
+@T
+    shared pointer to a T.
+    reference-counted and cycle-collected (they may be full-on GCed in the future).
+    allocated on a per-task private heap, therefore cannot be sent between tasks.
+
+&T
+    borrowed pointer to a T.
+    It can point to the inside of arbitrary data structures - on the stack, inside ~ or @ pointers
+
+    rusts' "borrow checker" ensures &ptrs can not outlive the scope of the pointed-to data.
+    impossible to have use after free errors
+
+    additions:
+    lifetime regions + borrow checker at compile time
+
+    http://smallcultfollowing.com/babysteps/blog/2012/07/19/yet-another-tutorial-on-borrowed-pointers/
+
+# type classes of Haskell
+
+algebraic data types
+parametric polymophism
+
+# Erlang style light weight tasks
+
+expect failure, design for it, recover
+
+type system is concurrency aware
+no shared mutable state (~unique pointers used to transfer ownership)
+shared state through immutability
+
+pipes communicate between tasks
+pipes are one<->one (no copying)
+type system renders data races impossible (not all race conditions are illiminated)
+transfer of ownership means no copying between tasks
+
+
+built in mech for failure, throwable but not catchable
+
+
+http://winningraceconditions.blogspot.nl/2012/09/rust-1-primer.html
+
+    fn main() {
+        for 5.times {
+            println("Here's some Rust!");
+        }
+    }
+
+    fn main() {
+        times(5, || { println("Here's some Rust!"); true });
+    }
+
+    fn times(count: uint, blk: fn() -> bool) {  // 'blk' is a stack-allocated closure
+        if count > 0 {
+            if blk() {  // Only continue looping if blk succeeds
+                times(count-1, blk);  // Iterate until count hits 0
+            }
+        }
+    }
+
+    fn main() {
+        for 5.times {
+            do task::spawn { // create 5 tasks to print a message in parallel
+                println("Here's some Rust!");
+            }
+        }
+    }
+
